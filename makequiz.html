@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クイズ追加フォーム</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #555;
+        }
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            resize: none;
+        }
+        .option-group {
+            margin-bottom: 16px;
+        }
+        .radio-label {
+            margin-right: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>クイズ追加フォーム</h1>
+    <form id="quizForm">
+        <label for="quizText">問題</label>
+        <textarea id="quizText" name="quizText" rows="4"></textarea>
+
+        <div class="option-group">
+            <label for="optionA">A</label>
+            <input type="text" id="optionA" name="optionA">
+        </div>
+
+        <div class="option-group">
+            <label for="optionB">B</label>
+            <input type="text" id="optionB" name="optionB">
+        </div>
+
+        <div class="option-group">
+            <label for="optionC">C</label>
+            <input type="text" id="optionC" name="optionC">
+        </div>
+
+        <div class="option-group">
+            <label>正解のものに1つチェック:</label>
+            <label class="radio-label">
+                <input type="radio" name="correctOption" value="A"> A
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="correctOption" value="B"> B
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="correctOption" value="C"> C
+            </label>
+        </div>
+
+        <label for="explanation">解説(あれば記入):</label>
+        <textarea id="explanation" name="explanation" rows="4"></textarea>
+
+        <button type="button" onclick="submitQuiz()">追加</button>
+    </form>
+
+    <script>
+        // クッキーの読み込み
+        function getCookie(name) {
+            const cookies = document.cookie.split("; ");
+            for (const cookie of cookies) {
+                const [key, value] = cookie.split("=");
+                if (key === name) return decodeURIComponent(value);
+            }
+            return "";
+        }
+
+        // クッキーの設定
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/`;
+        }
+
+        // フォームの値をクッキーに保存
+        function saveFormToCookies() {
+            const form = document.getElementById("quizForm");
+            for (const element of form.elements) {
+                if (element.name) {
+                    setCookie(element.name, element.value, 7);
+                }
+            }
+        }
+
+        // クッキーからフォームを復元
+        function restoreFormFromCookies() {
+            const form = document.getElementById("quizForm");
+            for (const element of form.elements) {
+                if (element.name) {
+                    const value = getCookie(element.name);
+                    if (value) {
+                        if (element.type === "radio") {
+                            if (element.value === value) {
+                                element.checked = true;
+                            }
+                        } else {
+                            element.value = value;
+                        }
+                    }
+                }
+            }
+        }
+
+        // クイズ送信処理
+        function submitQuiz() {
+            // 送信前に改行を削除
+            const form = document.getElementById("quizForm");
+            for (const element of form.elements) {
+                if (element.type === "text" || element.tagName.toLowerCase() === "textarea") {
+                    element.value = element.value.replace(/\r?\n/g, "");  // 改行を削除
+                }
+            }
+
+            saveFormToCookies();
+            const quizID = prompt("QuizIDを入力してください (例: hoge)");
+            if (!quizID) {
+                alert("QuizIDが入力されていません。");
+                return;
+            }
+
+            const formData = new FormData(document.getElementById("quizForm"));
+            formData.append("quizID", quizID);
+
+            fetch("makequiz.php", {
+                method: "POST",
+                body: formData,
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert(data);
+            })
+            .catch(error => {
+                console.error("エラー:", error);
+                alert("クイズの追加に失敗しました。");
+            });
+        }
+
+        // ページ読み込み時にフォームを復元
+        window.onload = restoreFormFromCookies;
+    </script>
+</body>
+</html>
